@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Teaching Mode</title>
+  <desc id="desc">Visual for chess training and coaching mode.</desc>
+  <rect width="1200" height="800" fill="#f8fafc" />
+  <rect x="70" y="70" width="1060" height="660" rx="24" fill="#ffffff" stroke="#e5e7eb" stroke-width="3" />
+  <rect x="120" y="140" width="560" height="500" rx="16" fill="#111827" />
+  <g transform="translate(160 180)">
+    <rect width="120" height="120" fill="#f9fafb" />
+    <rect x="120" width="120" height="120" fill="#d4af37" />
+    <rect x="240" width="120" height="120" fill="#f9fafb" />
+    <rect x="360" width="120" height="120" fill="#d4af37" />
+    <rect y="120" width="120" height="120" fill="#d4af37" />
+    <rect x="120" y="120" width="120" height="120" fill="#f9fafb" />
+    <rect x="240" y="120" width="120" height="120" fill="#d4af37" />
+    <rect x="360" y="120" width="120" height="120" fill="#f9fafb" />
+    <rect y="240" width="120" height="120" fill="#f9fafb" />
+    <rect x="120" y="240" width="120" height="120" fill="#d4af37" />
+    <rect x="240" y="240" width="120" height="120" fill="#f9fafb" />
+    <rect x="360" y="240" width="120" height="120" fill="#d4af37" />
+  </g>
+  <rect x="740" y="160" width="330" height="140" rx="16" fill="#f3f4f6" stroke="#d1d5db" />
+  <text x="770" y="210" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">Lesson 01</text>
+  <text x="770" y="250" fill="#4b5563" font-family="Inter, Arial, sans-serif" font-size="24">Control the center</text>
+  <rect x="740" y="330" width="330" height="220" rx="16" fill="#111827" />
+  <text x="770" y="390" fill="#f9fafb" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700">AI Coach</text>
+  <text x="770" y="435" fill="#d1d5db" font-family="Inter, Arial, sans-serif" font-size="22">Best move: Nf3</text>
+  <text x="770" y="470" fill="#d1d5db" font-family="Inter, Arial, sans-serif" font-size="22">Plan: short castle</text>
+</svg>
