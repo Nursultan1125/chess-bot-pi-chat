@@ -474,7 +474,7 @@ const PlayPage = ({ lang }: { lang: Language }) => {
     setStatusText(t.your_turn);
   };
 
-  const requestBotMove = async (position: Chess) => {
+  const requestBotMove = async (position: Chess, lastPlayerMoveSan: string) => {
     const apiKey = (process.env.OPENAI_API_KEY as string | undefined) ?? '';
     if (!apiKey) {
       setStatusText(t.key_error);
@@ -496,6 +496,10 @@ const PlayPage = ({ lang }: { lang: Language }) => {
         lang === 'ky'
           ? 'Жакшы жүрүш. Борборду көзөмөлдөп, фигуралардын активдүүлүгүн жогорулатыңыз.'
           : 'Хороший ход. Контролируйте центр и повышайте активность фигур.';
+      const fallbackPlayerCoachText =
+        lang === 'ky'
+          ? 'Сиздин жүрүшүңүз жакшы көрүнөт. Борборду көзөмөлдөөнү жана фигуралардын өнүгүшүн улантыңыз.'
+          : 'Ваш ход выглядит неплохо. Продолжайте контролировать центр и развивать фигуры.';
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -511,11 +515,11 @@ const PlayPage = ({ lang }: { lang: Language }) => {
             {
               role: 'system',
               content:
-                `You are a chess coach bot. Always return compact JSON with keys "move" and "coach". The move must be in UCI format (e2e4 or e7e8q) and must be selected from legal_moves only. Keep coach explanation under 50 words and educational. Write "coach" strictly in ${coachLanguage}.`,
+                `You are a chess coach bot. Always return compact JSON with keys "move", "coach", and "player_coach". The move must be in UCI format (e2e4 or e7e8q) and must be selected from legal_moves only. "coach" is feedback for your own move. "player_coach" is feedback for the player's last move. Keep both explanations under 50 words, educational, and concise. Write both "coach" and "player_coach" strictly in ${coachLanguage}.`,
             },
             {
               role: 'user',
-              content: `Response language: ${coachLanguage}. FEN: ${position.fen()}. legal_moves: ${legalMoves.join(', ')}.`,
+              content: `Response language: ${coachLanguage}. Player last move SAN: ${lastPlayerMoveSan}. FEN: ${position.fen()}. legal_moves: ${legalMoves.join(', ')}.`,
             },
           ],
         }),
@@ -528,10 +532,15 @@ const PlayPage = ({ lang }: { lang: Language }) => {
 
       const data = await response.json();
       const content = data?.choices?.[0]?.message?.content;
-      const parsed = JSON.parse(content ?? '{}') as { move?: string; coach?: string };
+      const parsed = JSON.parse(content ?? '{}') as {
+        move?: string;
+        coach?: string;
+        player_coach?: string;
+      };
       const botMoveRaw = (parsed.move ?? '').trim().toLowerCase();
       const botMove = legalMoves.includes(botMoveRaw) ? botMoveRaw : legalMoves[0];
       const explanation = parsed.coach?.trim() || fallbackCoachText;
+      const playerExplanation = parsed.player_coach?.trim() || fallbackPlayerCoachText;
 
       const botPosition = new Chess(position.fen());
       const moveResult = botPosition.move({
@@ -548,6 +557,10 @@ const PlayPage = ({ lang }: { lang: Language }) => {
       setGame(botPosition);
       setChat((prev) => [
         ...prev,
+        {
+          role: 'assistant',
+          text: `${t.your_move}: ${lastPlayerMoveSan} — ${playerExplanation}`,
+        },
         { role: 'assistant', text: `${moveResult.san} — ${explanation}` },
       ]);
 
@@ -597,7 +610,7 @@ const PlayPage = ({ lang }: { lang: Language }) => {
       return true;
     }
 
-    await requestBotMove(next);
+    await requestBotMove(next, move.san);
     return true;
   };
 
