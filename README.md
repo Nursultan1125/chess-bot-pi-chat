@@ -2,19 +2,57 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# ChessBot AI (React + Vite)
 
-This contains everything you need to run your app locally.
+Interactive chess app with:
+- a playable board (drag-and-drop + UCI input),
+- AI response moves,
+- short coaching comments for both player and bot moves,
+- text-to-speech playback for coach messages.
 
-View your app in AI Studio: https://ai.studio/apps/e0273a5f-dfb7-4859-911e-8804acd627e3
+## Features
+
+- Play as White against the AI coach.
+- Move input format: `e2e4` (or promotion `e7e8q`).
+- Bot returns:
+  - next move,
+  - coaching text for bot move,
+  - coaching text for your last move.
+- Chat panel with RU/KY localization.
+- Voice playback (TTS) in browser:
+  - auto-selects `ky-*` voice for Kyrgyz UI,
+  - falls back to `ru-*` if Kyrgyz voice is unavailable,
+  - manual voice selection from available system/browser voices.
+
+## Requirements
+
+- Node.js 18+ (recommended)
+- npm
+
+## Environment
+
+Create `.env.local` in project root:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
-
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Start dev server:
+   ```bash
+   npm run dev
+   ```
+3. Open app:
+   - `http://localhost:3000`
+
+## Useful Scripts
+
+- `npm run dev` - start development server.
+- `npm run build` - build production bundle.
+- `npm run preview` - preview production build.
+- `npm run lint` - TypeScript check (`tsc --noEmit`).
