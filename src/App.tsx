@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { translations, Language } from './translations';
 import { Chess } from 'chess.js';
+import SpeakTTS from 'speak-tts';
 import photo1 from '../img/photo_1_2026-02-19_20-24-14.jpg';
 import photo2 from '../img/photo_2_2026-02-19_20-24-14.jpg';
 import photo3 from '../img/photo_3_2026-02-19_20-24-14.jpg';
@@ -443,6 +444,23 @@ const pieceToGlyph: Record<string, string> = {
   kb: '♚',
 };
 
+type VoiceOption = {
+  name: string;
+  lang: string;
+};
+
+const getPreferredVoice = (voices: VoiceOption[], uiLang: Language) => {
+  if (voices.length === 0) return undefined;
+  if (uiLang === 'ky') {
+    return (
+      voices.find((v) => v.lang.toLowerCase().startsWith('ky')) ??
+      voices.find((v) => v.lang.toLowerCase().startsWith('ru')) ??
+      voices[0]
+    );
+  }
+  return voices.find((v) => v.lang.toLowerCase().startsWith('ru')) ?? voices[0];
+};
+
 const PlayPage = ({ lang }: { lang: Language }) => {
   const t = translations[lang].play;
   const [game, setGame] = useState(() => new Chess());
@@ -452,6 +470,13 @@ const PlayPage = ({ lang }: { lang: Language }) => {
   const [statusText, setStatusText] = useState(t.your_turn);
   const [dragFrom, setDragFrom] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const speechRef = useRef<SpeakTTS | null>(null);
+  const lastSpokenMessageRef = useRef('');
+  const [isSpeechReady, setIsSpeechReady] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [availableVoices, setAvailableVoices] = useState<VoiceOption[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('');
+  const canUseSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   useEffect(() => {
     setStatusText(t.your_turn);
@@ -465,7 +490,79 @@ const PlayPage = ({ lang }: { lang: Language }) => {
     });
   }, [chat, isThinking]);
 
+  useEffect(() => {
+    if (!canUseSpeech) return;
+
+    const synthesis = window.speechSynthesis;
+    const updateVoices = () => {
+      const voices = synthesis
+        .getVoices()
+        .filter((voice) => Boolean(voice.name) && Boolean(voice.lang))
+        .map((voice) => ({ name: voice.name, lang: voice.lang }));
+      setAvailableVoices(voices);
+    };
+
+    updateVoices();
+    synthesis.addEventListener('voiceschanged', updateVoices);
+
+    return () => {
+      synthesis.removeEventListener('voiceschanged', updateVoices);
+    };
+  }, [canUseSpeech]);
+
+  useEffect(() => {
+    const preferred = getPreferredVoice(availableVoices, lang);
+    if (preferred) {
+      setSelectedVoiceName(preferred.name);
+    } else {
+      setSelectedVoiceName('');
+    }
+  }, [availableVoices, lang]);
+
+  useEffect(() => {
+    if (!canUseSpeech) return;
+
+    const speech = new SpeakTTS();
+    speechRef.current = speech;
+    setIsSpeechReady(false);
+    const chosenVoice =
+      availableVoices.find((voice) => voice.name === selectedVoiceName) ??
+      getPreferredVoice(availableVoices, lang);
+
+    speech
+      .init({
+        volume: 1,
+        lang: chosenVoice?.lang ?? (lang === 'ru' ? 'ru-RU' : 'ky-KG'),
+        voice: chosenVoice?.name,
+        rate: 0.95,
+        pitch: 1,
+        splitSentences: true,
+      })
+      .then(() => setIsSpeechReady(true))
+      .catch(() => setIsSpeechReady(false));
+
+    return () => {
+      speech.cancel();
+      speechRef.current = null;
+      setIsSpeechReady(false);
+    };
+  }, [lang, canUseSpeech, availableVoices, selectedVoiceName]);
+
+  useEffect(() => {
+    if (!voiceEnabled || !isSpeechReady || isThinking) return;
+    const lastMessage = chat[chat.length - 1];
+    if (!lastMessage || lastMessage.role !== 'assistant') return;
+
+    const messageKey = `${chat.length}:${lastMessage.text}`;
+    if (lastSpokenMessageRef.current === messageKey) return;
+    lastSpokenMessageRef.current = messageKey;
+
+    speechRef.current?.speak({ text: lastMessage.text }).catch(() => undefined);
+  }, [chat, voiceEnabled, isSpeechReady, isThinking]);
+
   const resetGame = () => {
+    speechRef.current?.cancel();
+    lastSpokenMessageRef.current = '';
     setGame(new Chess());
     setMoveInput('');
     setChat([]);
@@ -715,7 +812,48 @@ const PlayPage = ({ lang }: { lang: Language }) => {
           </div>
 
           <div className="bg-white rounded-3xl p-5 shadow-md border border-gray-100 h-[640px] flex flex-col">
-            <h3 className="text-xl font-bold mb-4">{t.bot}</h3>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-xl font-bold">{t.bot}</h3>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-chess-dark/60" htmlFor="voice-select">
+                  {t.voice_label}
+                </label>
+                <select
+                  id="voice-select"
+                  className="text-xs border border-gray-200 rounded-lg px-2 py-2 bg-white max-w-[170px] disabled:opacity-50"
+                  disabled={!canUseSpeech || availableVoices.length === 0}
+                  value={selectedVoiceName}
+                  onChange={(e) => setSelectedVoiceName(e.target.value)}
+                >
+                  {availableVoices.length === 0 ? (
+                    <option value="">{t.voice_unavailable}</option>
+                  ) : (
+                    availableVoices.map((voice) => (
+                      <option key={`${voice.name}-${voice.lang}`} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))
+                  )}
+                </select>
+                <button
+                  type="button"
+                  className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                  disabled={!canUseSpeech}
+                  onClick={() => {
+                    if (voiceEnabled) {
+                      speechRef.current?.cancel();
+                    }
+                    setVoiceEnabled((prev) => !prev);
+                  }}
+                >
+                  {!canUseSpeech
+                    ? t.voice_unavailable
+                    : voiceEnabled
+                      ? t.voice_on
+                      : t.voice_off}
+                </button>
+              </div>
+            </div>
             <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-1">
               {chat.length === 0 && (
                 <div className="text-sm text-chess-dark/50">{t.your_move}: {t.placeholder}</div>

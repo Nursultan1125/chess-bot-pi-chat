@@ -86,6 +86,10 @@ export const translations = {
       checkmate: 'Мат! Партия завершена.',
       draw: 'Ничья. Партия завершена.',
       your_turn: 'Ваш ход (белыми).',
+      voice_on: 'Озвучка: вкл',
+      voice_off: 'Озвучка: выкл',
+      voice_label: 'Голос',
+      voice_unavailable: 'Озвучка недоступна',
     }
   },
   ky: {
@@ -173,6 +177,10 @@ export const translations = {
       checkmate: 'Мат! Оюн аяктады.',
       draw: 'Тең чыгуу. Оюн аяктады.',
       your_turn: 'Сиздин жүрүш (актар).',
+      voice_on: 'Үн: күйүк',
+      voice_off: 'Үн: өчүк',
+      voice_label: 'Үн',
+      voice_unavailable: 'Үн жеткиликсиз',
     }
   }
 };
